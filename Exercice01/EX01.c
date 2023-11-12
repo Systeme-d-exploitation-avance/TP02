@@ -7,7 +7,11 @@
 
 // Usage information
 #define USAGE "USAGE: Programme générant un processus fils avec la primitive système fork"
-#define USAGE_PARAMS "PARAMETERS : No parameters needed\n"
+#define USAGE_SYNTAX "[OPTIONS] No parameters needed"
+#define USAGE_PARAMS "OPTIONS:\n\
+  -v, --verbose : enable *verbose* mode\n\
+  -h, --help    : display this help\n\
+"
 
 /**
  * Procedure which displays binary usage
@@ -17,10 +21,7 @@
  */
 void print_usage(char *binary_name)
 {
-    dprintf(1, "%s\n%s\n%s\n", binary_name, USAGE, USAGE_PARAMS);
-    dprintf(1, "Options:\n");
-    dprintf(1, "  -h, --help     Display this help and exit\n");
-    dprintf(1, "  -v, --verbose  Print more detailed information\n");
+    dprintf(1, "%s %s\n%s\n\n%s\n", binary_name, USAGE, USAGE_SYNTAX, USAGE_PARAMS);
 }
 
 /**
