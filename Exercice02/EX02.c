@@ -3,6 +3,10 @@
 #include <string.h>
 #include <errno.h>
 #include <getopt.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <fcntl.h>
 
 #define STDOUT 1
 #define STDERR 2
@@ -130,7 +134,8 @@ int main(int argc, char **argv)
 
     // Concatenating all args in a single string
     char allArgs[4096] = "";
-    for (int i = 1; i < argc; i++) {
+    for (int i = 1; i < argc; i++)
+    {
         strcat(allArgs, argv[i]);
         strcat(allArgs, " ");
     }
@@ -143,8 +148,47 @@ int main(int argc, char **argv)
     // Printing the first word passed on the command line
     dprintf(STDOUT, "Message: %s\n\n", argv[1]);
 
-    // Freeing allocated memory
-    free_if_needed(allArgs);
+    // Creating a child process
+    pid_t child_pid = fork();
+
+    if (child_pid == -1)
+    {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
+
+    if (child_pid == 0)
+    {
+        dprintf(STDOUT, "Child PID: %d\n", getpid());
+
+        // Close STDOUT 
+        close(STDOUT);
+
+        // Create a temporary file in /tmp
+        char temp_filename[] = "/tmp/proc-exerciseXXXXXX";
+        int fd = mkstemp(temp_filename);
+        if (fd == -1)
+        {
+            perror("mkstemp");
+            exit(EXIT_FAILURE);
+        }
+
+        // Print the file descriptor of the temporary file
+        dprintf(STDOUT, "File Descriptor of /tmp/proc-exercise: %d\n", fd);
+
+        exit(EXIT_FAILURE);
+    }
+    else
+    {
+        // Print the PID of the parent process
+        dprintf(STDOUT, "Parent PID: %d\n", getpid());
+
+        // Wait for the child process to terminate
+        int status;
+        waitpid(child_pid, &status, 0);
+
+        dprintf(STDOUT, "That’s All Folks !\n");
+    }
 
     return EXIT_SUCCESS;
 }
