@@ -132,6 +132,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
+    // 2.1
     // Concatenating all args in a single string
     char allArgs[4096] = "";
     for (int i = 1; i < argc; i++)
@@ -148,7 +149,7 @@ int main(int argc, char **argv)
     // Printing the first word passed on the command line
     dprintf(STDOUT, "Message: %s\n\n", argv[1]);
 
-    // Creating a child process
+    // Creating a child process (2.2)
     pid_t child_pid = fork();
 
     if (child_pid == -1)
@@ -159,10 +160,11 @@ int main(int argc, char **argv)
 
     if (child_pid == 0)
     {
+        // Print the PID of the child process
         dprintf(STDOUT, "Child PID: %d\n", getpid());
 
-        // Close STDOUT 
-        close(STDOUT);
+        // Close STDOUT
+        //close(STDOUT);
 
         // Create a temporary file in /tmp
         char temp_filename[] = "/tmp/proc-exerciseXXXXXX";
@@ -173,22 +175,30 @@ int main(int argc, char **argv)
             exit(EXIT_FAILURE);
         }
 
-        // Print the file descriptor of the temporary file
-        dprintf(STDOUT, "File Descriptor of /tmp/proc-exercise: %d\n", fd);
+        // 2.3
+        close(fd);
 
-        exit(EXIT_FAILURE);
+        // Print the descriptor 
+        dprintf(STDOUT, "Descriptor : %d\n", fd);
+
+        // TO BE FIXED GENERATE INFINITE LOOP
+        // if (execv(argv[0], argv) == -1)
+        // {
+        //     perror("execv");
+        //     exit(EXIT_FAILURE);
+        // }
+
+        exit(EXIT_SUCCESS);
     }
-    else
-    {
-        // Print the PID of the parent process
-        dprintf(STDOUT, "Parent PID: %d\n", getpid());
 
-        // Wait for the child process to terminate
-        int status;
-        waitpid(child_pid, &status, 0);
+    // Print the PID of the parent process
+    dprintf(STDOUT, "Parent PID: %d\n", getpid());
 
-        dprintf(STDOUT, "That’s All Folks !\n");
-    }
+    // Wait for the child process to terminate
+    int status;
+    waitpid(child_pid, &status, 0);
+
+    dprintf(STDOUT, "That’s All Folks !\n");
 
     return EXIT_SUCCESS;
 }
