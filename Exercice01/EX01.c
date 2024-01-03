@@ -1,51 +1,144 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
+#include <getopt.h>
 
-void print_usage(char *bin_name) {
-    dprintf(1, "Usage: %s\n", bin_name);
+// Usage information
+#define USAGE "USAGE: Programme générant un processus fils avec la primitive système fork"
+#define USAGE_SYNTAX "[OPTIONS] No parameters needed"
+#define USAGE_PARAMS "OPTIONS:\n\
+  -v, --verbose : enable *verbose* mode\n\
+  -h, --help    : display this help\n\
+"
+
+/**
+ * Procedure which displays binary usage
+ * by printing on stdout all available options
+ *
+ * \return void
+ */
+void print_usage(char *binary_name)
+{
+    dprintf(1, "%s %s\n%s\n\n%s\n", binary_name, USAGE, USAGE_SYNTAX, USAGE_PARAMS);
 }
 
-int main(int argc, char **argv) {
-    pid_t child_pid, wpid;
+/**
+ * Binary options declaration
+ * (must end with {0,0,0,0})
+ *
+ * \see man 3 getopt_long or getopt
+ * \see struct option definition
+ */
+static struct option binary_opts[] =
+    {
+        {"help", no_argument, 0, 'h'},
+        {"verbose", no_argument, 0, 'v'},
+        {0, 0, 0, 0}};
+
+/**
+ * Binary options string
+ * (linked to optionn declaration)
+ *
+ * \see man 3 getopt_long or getopt
+ */
+const char *binary_optstr = "hvi:o:";
+
+/**
+ * Binary main loop
+ *
+ * \return 1 if it exit successfully
+ */
+int main(int argc, char **argv)
+{
+
+    /**
+     * Binary variables
+     * (could be defined in a structure)
+     */
+    short int is_verbose_mode = 0;
+    pid_t child_pid;
     int status;
 
-    int opt;
+    // Parsing options
+    int opt = -1;
+    int opt_idx = -1;
 
-    while ((opt = getopt(argc, argv, "h")) != -1) {
-        switch (opt) {
-            case 'h':
-                print_usage(argv[0]);
-                exit(EXIT_SUCCESS);
-            default:
-                print_usage(argv[0]);
-                exit(EXIT_FAILURE);
+    while ((opt = getopt_long(argc, argv, binary_optstr, binary_opts, &opt_idx)) != -1)
+    {
+        switch (opt)
+        {
+        case 'v':
+            // verbose mode
+            is_verbose_mode = 1;
+            break;
+        case 'h':
+            print_usage(argv[0]);
+            exit(EXIT_SUCCESS);
+        default:
+            break;
         }
     }
 
+    // Printing params
+    dprintf(1, "** PARAMS **\n%-8s: %d\n\n",
+            "verbose", is_verbose_mode);
+
+    // Business logic must be implemented at this point
+    // Create a child process
     child_pid = fork();
 
-    if (child_pid < 0) {
-        perror("Error with fork()");
+    if (child_pid == -1)
+    {
+        // Error handling if fork fails
+        perror("Fork failed");
         exit(EXIT_FAILURE);
-    } else if (child_pid == 0) {
-        printf("> Processus fils... <\n");
-        printf("PID FILS = %d\nPID PERE = %d\n", getpid(), getppid());
-        int last_pid_digit = getpid() % 10;
-        exit(last_pid_digit);
-    } else {
-        printf("> Processus pere... <\n");
-        printf("PID FILS = %d\n", child_pid);
+    }
 
-        wpid = wait(&status);
-        if (WIFEXITED(status)) {
-            printf("Code retour du fils (PID:%d) = %d\n", wpid, WEXITSTATUS(status));
-        } else {
-            perror("Le fils n'a pas terminé normalement");
+    if (child_pid == 0)
+    {
+        // Code for the child process
+        printf("Child Process Info:\n");
+        printf("  PID: %d\n", getpid());
+        printf("  Parent PID: %d\n", getppid());
+
+        if (is_verbose_mode)
+        {
+            printf("  [Verbose] Child process created successfully.\n");
+        }
+
+        // Exit with return code equal to the last digit of PID
+        exit(getpid() % 10);
+    }
+    else
+    {
+        // Code for the parent process
+        printf("Parent Process Info:\n");
+        printf("  PID: %d\n", getpid());
+        printf("  Child PID: %d\n", child_pid);
+
+        if (is_verbose_mode)
+        {
+            printf("  [Verbose] Parent process created a child with PID: %d.\n", child_pid);
+        }
+
+        // Wait for the child to terminate and get its return code
+        waitpid(child_pid, &status, 0);
+
+        if (WIFEXITED(status))
+        {
+            printf("Child process exited with return code: %d\n", WEXITSTATUS(status));
+            if (is_verbose_mode)
+            {
+                printf("  [Verbose] Child process terminated successfully.\n");
+            }
+        }
+        else
+        {
+            printf("Child process did not exit normally.\n");
         }
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
